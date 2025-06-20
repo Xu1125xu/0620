@@ -1,0 +1,1173 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 互動式反應訓練牆 - Google AI 版本</title>
+    <style>
+        /* 動畫效果 */
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        @keyframes slideInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes glow {
+            0%, 100% { box-shadow: 0 0 20px rgba(64, 133, 244, 0.3); }
+            50% { box-shadow: 0 0 40px rgba(64, 133, 244, 0.6); }
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(-45deg, #667eea, #764ba2, #f093fb, #f5576c);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+            min-height: 100vh;
+            color: #333;
+            overflow-x: hidden;
+            position: relative;
+        }
+        
+        /* 動態背景粒子 */
+        .background-particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+            pointer-events: none;
+        }
+        
+        .particle {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            animation: slideInUp 0.8s ease;
+        }
+
+        .header h1 {
+            font-size: 3em;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: pulse 3s ease-in-out infinite;
+        }
+
+        .subtitle {
+            font-size: 1.2em;
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        /* 系統狀態 */
+        .system-status {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        .status-badge {
+            padding: 8px 16px;
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            animation: slideInUp 0.6s ease;
+        }
+
+        .status-badge:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .status-badge.success {
+            background: linear-gradient(45deg, #4CAF50, #8BC34A);
+            color: white;
+            animation: glow 2s ease-in-out infinite;
+        }
+
+        .status-badge.info {
+            background: linear-gradient(45deg, #2196F3, #03A9F4);
+            color: white;
+        }
+
+        .status-badge.warning {
+            background: linear-gradient(45deg, #FF9800, #FFC107);
+            color: white;
+        }
+
+        /* 快速設定區 */
+        .quick-setup {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 25px;
+            border-radius: 15px;
+            margin: 20px 0;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            animation: slideInUp 0.8s ease 0.2s both;
+        }
+
+        .quick-setup h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .quick-api-form {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .quick-api-form input {
+            flex: 1;
+            min-width: 250px;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .quick-api-form input:focus {
+            border-color: #4285f4;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(66, 133, 244, 0.1);
+        }
+
+        .quick-api-form button {
+            padding: 12px 20px;
+            background: linear-gradient(45deg, #4285f4, #1976d2);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .quick-api-form button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(66, 133, 244, 0.3);
+        }
+
+        /* 連接狀態區 */
+        .connection-section {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 25px;
+            border-radius: 15px;
+            margin: 20px 0;
+            text-align: center;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            animation: slideInUp 0.8s ease 0.4s both;
+        }
+
+        .connection-controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            margin: 15px 0;
+            flex-wrap: wrap;
+        }
+
+        .status-indicator {
+            padding: 8px 16px;
+            border-radius: 25px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .status-indicator.connected {
+            background: linear-gradient(45deg, #4CAF50, #8BC34A);
+            color: white;
+            animation: glow 2s ease-in-out infinite;
+        }
+
+        .status-indicator.disconnected {
+            background: #f5f5f5;
+            color: #666;
+        }
+
+        .connect-btn {
+            padding: 12px 25px;
+            background: linear-gradient(45deg, #FF5722, #FF9800);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .connect-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 87, 34, 0.3);
+        }
+
+        .connect-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* 難度選擇 */
+        .difficulty-section {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 25px;
+            border-radius: 15px;
+            margin: 20px 0;
+            text-align: center;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            animation: slideInUp 0.8s ease 0.6s both;
+        }
+
+        .difficulty-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .difficulty-btn {
+            padding: 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            user-select: none;
+            position: relative;
+        }
+
+        .difficulty-btn:hover {
+            border-color: #4285f4;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(66, 133, 244, 0.2);
+        }
+
+        .difficulty-btn:active {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(66, 133, 244, 0.3);
+        }
+
+        .difficulty-btn.active {
+            border-color: #4285f4;
+            background: linear-gradient(45deg, #4285f4, #1976d2);
+            color: white;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(66, 133, 244, 0.3);
+        }
+
+        .difficulty-btn .level {
+            font-weight: 700;
+            font-size: 1.1em;
+            pointer-events: none;
+        }
+
+        .difficulty-btn .description {
+            font-size: 0.9em;
+            opacity: 0.8;
+            pointer-events: none;
+        }
+
+        /* 訓練控制 */
+        .training-section {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 25px;
+            border-radius: 15px;
+            margin: 20px 0;
+            text-align: center;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            animation: slideInUp 0.8s ease 0.8s both;
+        }
+
+        .training-controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        .start-btn, .stop-btn {
+            padding: 15px 30px;
+            font-size: 1.1em;
+            font-weight: 600;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 140px;
+        }
+
+        .start-btn {
+            background: linear-gradient(45deg, #4CAF50, #8BC34A);
+            color: white;
+        }
+
+        .start-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(76, 175, 80, 0.3);
+        }
+
+        .stop-btn {
+            background: linear-gradient(45deg, #f44336, #e53935);
+            color: white;
+        }
+
+        .stop-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(244, 67, 54, 0.3);
+        }
+
+        .start-btn:disabled, .stop-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* 訓練資訊 */
+        .training-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .info-card {
+            background: linear-gradient(45deg, #f8f9fa, #e9ecef);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .info-card:hover {
+            border-color: #4285f4;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+        }
+
+        .info-label {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .info-value {
+            font-size: 1.8em;
+            font-weight: 700;
+            color: #333;
+        }
+
+        /* LED 指示器 */
+        .led-container {
+            margin: 30px 0;
+            display: flex;
+            justify-content: center;
+        }
+
+        .led-indicator {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: #f5f5f5;
+            border: 4px solid #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2em;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .led-indicator::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.3), transparent);
+            transform: rotate(45deg);
+            transition: transform 0.6s ease;
+        }
+
+        .led-indicator.led-on {
+            background: radial-gradient(circle, #ff4444, #cc0000);
+            border-color: #ff4444;
+            color: white;
+            box-shadow: 0 0 30px #ff4444, 0 0 60px #ff4444;
+            animation: pulse 0.5s ease-in-out infinite;
+        }
+
+        .led-indicator.led-on::before {
+            transform: rotate(45deg) translateX(100%);
+        }
+
+        .led-indicator.led-off {
+            background: #f5f5f5;
+            border-color: #ddd;
+            color: #999;
+        }
+
+        /* 指令區域 */
+        #instruction {
+            font-size: 1.2em;
+            margin: 20px 0;
+            padding: 15px;
+            background: rgba(66, 133, 244, 0.1);
+            border-radius: 8px;
+            border-left: 4px solid #4285f4;
+            font-weight: 500;
+        }
+
+        /* 統計區 */
+        .stats-section {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 25px;
+            border-radius: 15px;
+            margin: 20px 0;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            animation: slideInUp 0.8s ease 1s both;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .stat-card {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .stat-card .stat-value {
+            font-size: 2em;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .stat-card .stat-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        /* 結果區 */
+        .results-section {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 15px;
+            margin: 20px 0;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            animation: slideInUp 0.8s ease;
+            display: none;
+        }
+
+        /* AI 分析區 */
+        .ai-analysis-section {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 15px;
+            margin: 20px 0;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            animation: slideInUp 0.8s ease 0.2s both;
+        }
+
+        .ai-analysis-section h3 {
+            background: linear-gradient(45deg, #4285f4, #1976d2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .action-buttons button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .settings-btn {
+            background: linear-gradient(45deg, #9C27B0, #673AB7);
+            color: white;
+        }
+
+        .settings-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(156, 39, 176, 0.3);
+        }
+
+        /* 設定面板 */
+        .settings-panel {
+            position: fixed;
+            top: 0;
+            right: -400px;
+            width: 400px;
+            height: 100vh;
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(10px);
+            box-shadow: -5px 0 20px rgba(0,0,0,0.1);
+            transition: right 0.3s ease;
+            z-index: 1000;
+            padding: 30px;
+            overflow-y: auto;
+        }
+
+        .settings-panel.show {
+            right: 0;
+        }
+
+        .settings-panel h3 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .setting-group {
+            margin-bottom: 25px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .setting-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .setting-group input, .setting-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .setting-group input:focus, .setting-group textarea:focus {
+            border-color: #4285f4;
+            outline: none;
+        }
+
+        /* AI 分析樣式 */
+        .ai-loading {
+            text-align: center;
+            padding: 30px;
+            background: #f8fafc;
+            border-radius: 8px;
+            border: 2px dashed #cbd5e1;
+        }
+
+        /* 系統狀態區域 */
+        .system-status-section {
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .status-indicator {
+            display: inline-block;
+        }
+
+        .status-badge {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            background: rgba(255, 193, 7, 0.2);
+            color: #856404;
+            border: 1px solid rgba(255, 193, 7, 0.3);
+        }
+
+        .status-badge.success {
+            background: rgba(40, 167, 69, 0.2);
+            color: #155724;
+            border-color: rgba(40, 167, 69, 0.3);
+        }
+
+        .status-badge.warning {
+            background: rgba(220, 53, 69, 0.2);
+            color: #721c24;
+            border-color: rgba(220, 53, 69, 0.3);
+        }
+
+        /* 訓練結果區域 */
+        .results-section {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            margin: 20px 0;
+            animation: slideInUp 0.8s ease;
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .result-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .result-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .result-label {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }
+
+        .result-value {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        .loading-animation {
+            font-size: 2em;
+            animation: pulse 1.5s infinite;
+        }
+        
+        .ai-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        
+        .api-badge {
+            background: #4285f4;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+        
+        .analysis-content {
+            line-height: 1.6;
+            color: #374151;
+        }
+        
+        .fallback-notice {
+            background: #fef3c7;
+            border: 1px solid #f59e0b;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 15px;
+        }
+        
+        .network-error-notice {
+            background: #fee2e2;
+            border: 1px solid #ef4444;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 15px;
+        }
+        
+        .api-error-notice {
+            background: #dbeafe;
+            border: 1px solid #3b82f6;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 15px;
+        }
+        
+        .retry-section {
+            margin-top: 15px;
+            padding: 10px;
+            background: #f0f9ff;
+            border-radius: 6px;
+        }
+        
+        .retry-btn {
+            background: linear-gradient(45deg, #3b82f6, #1d4ed8);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            margin-top: 8px;
+        }
+        
+        .retry-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+        
+        .basic-analysis {
+            background: #f8fafc;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        /* 響應式設計 */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .difficulty-buttons {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .training-controls {
+                flex-direction: column;
+            }
+            
+            .quick-api-form {
+                flex-direction: column;
+            }
+            
+            .settings-panel {
+                width: 100%;
+                right: -100%;
+            }
+            
+            .training-info {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        /* 成功動畫 */
+        .success-animation {
+            animation: successPulse 0.6s ease;
+        }
+
+        @keyframes successPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); background-color: #4CAF50; }
+            100% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+    <!-- 動態背景粒子 -->
+    <div class="background-particles" id="particles"></div>
+    
+    <div class="container">
+        <header class="header">
+            <h1>🧠 AI 互動式反應訓練牆</h1>
+            <p class="subtitle">提升你的專注力與反應速度 - 由 Google AI 驅動</p>
+            
+            <!-- 系統狀態指示 -->
+            <div class="system-status">
+                <div id="aiStatus" class="status-badge info">🤖 AI 載入中...</div>
+                <div id="systemStatus" class="status-badge info">🔧 系統準備中</div>
+            </div>
+        </header>
+
+        <!-- 快速設定區 -->
+        <section class="quick-setup">
+            <h3>🚀 快速設定</h3>
+            <div class="quick-api-form">
+                <input type="password" id="quickApiKey" placeholder="輸入您的 Google API Key" autocomplete="off">
+                <button id="quickSaveApi">儲存</button>
+            </div>
+            <small>💡 <a href="https://makersuite.google.com/app/apikey" target="_blank">獲取 Google API Key</a> | 需要 API Key 才能使用 Google AI 分析</small>
+        </section>
+
+        <!-- 連接狀態區 -->
+        <section class="connection-section">
+            <h2>🔗 硬體連接狀態</h2>
+            <div class="connection-controls">
+                <span id="connectionStatus" class="status-indicator disconnected">未連接</span>
+                <button id="connectBtn" class="connect-btn">連接 Arduino</button>
+            </div>
+            <p class="connection-note">🎮 連接 Arduino 使用實體按鈕，或使用空白鍵模擬反應</p>
+        </section>
+
+        <!-- 難度選擇 -->
+        <section class="difficulty-section">
+            <h2>🎯 選擇訓練難度</h2>
+            <div class="difficulty-buttons">
+                <button class="difficulty-btn" data-level="1">
+                    <span class="level">等級 1</span>
+                    <span class="description">輕鬆 (3秒)</span>
+                </button>
+                <button class="difficulty-btn" data-level="2">
+                    <span class="level">等級 2</span>
+                    <span class="description">簡單 (2.5秒)</span>
+                </button>
+                <button class="difficulty-btn active" data-level="3">
+                    <span class="level">等級 3</span>
+                    <span class="description">普通 (2秒)</span>
+                </button>
+                <button class="difficulty-btn" data-level="4">
+                    <span class="level">等級 4</span>
+                    <span class="description">困難 (1.5秒)</span>
+                </button>
+                <button class="difficulty-btn" data-level="5">
+                    <span class="level">等級 5</span>
+                    <span class="description">專家 (1秒)</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- 訓練控制 -->
+        <section class="training-section">
+            <h2>⚡ 反應訓練</h2>
+            <div class="training-controls">
+                <button id="startBtn" class="start-btn">開始訓練</button>
+                <button id="stopBtn" class="stop-btn" disabled>停止訓練</button>
+            </div>
+            
+            <div class="training-info">
+                <div class="info-card">
+                    <div class="info-label">當前回合</div>
+                    <div class="info-value"><span id="currentRound">0</span> / <span id="totalRounds">10</span></div>
+                </div>
+                <div class="info-card">
+                    <div class="info-label">平均反應時間</div>
+                    <div class="info-value" id="averageTime">-- ms</div>
+                </div>
+                <div class="info-card">
+                    <div class="info-label">最佳成績</div>
+                    <div class="info-value" id="bestTime">-- ms</div>
+                </div>
+                <div class="info-card">
+                    <div class="info-label">當前反應</div>
+                    <div class="info-value" id="reactionTime">等待開始...</div>
+                </div>
+            </div>
+            
+            <!-- LED 指示器 -->
+            <div class="led-container">
+                <div id="ledIndicator" class="led-indicator led-off">⚫</div>
+            </div>
+            
+            <div id="instruction">選擇難度後點擊「開始訓練」</div>
+        </section>
+
+        <!-- 統計概覽 -->
+        <section class="stats-section">
+            <h2>🏆 訓練統計</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalReactions">0</div>
+                    <div class="stat-label">總反應次數</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="successRate">0%</div>
+                    <div class="stat-label">成功率</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="standardDeviation">-- ms</div>
+                    <div class="stat-label">穩定性</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="improvement">--</div>
+                    <div class="stat-label">改善建議</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Google AI 分析區 -->
+        <section class="ai-analysis-section">
+            <h3>🧠 Google AI 智能分析</h3>
+            <div id="aiSuggestions">
+                <div class="ai-loading">
+                    <div class="loading-animation">🤖</div>
+                    <p>完成訓練後，Google AI 將為您提供專業分析...</p>
+                </div>
+            </div>
+            <div class="action-buttons">
+                <button id="speakBtn" class="speak-btn">🎙️ 語音播報建議</button>
+                <button id="settingsBtn" class="settings-btn">⚙️ 進階設定</button>
+                <small><a href="https://makersuite.google.com/app/apikey" target="_blank">獲取 API Key</a> 以使用 Google AI 分析</small>
+            </div>
+        </section>
+
+        <!-- 系統狀態 -->
+        <section class="system-status-section">
+            <div class="status-indicator">
+                <span id="systemStatus" class="status-badge">🟡 系統準備中</span>
+            </div>
+        </section>
+
+        <!-- 訓練結果 -->
+        <section id="resultsSection" class="results-section" style="display: none;">
+            <h3>📊 訓練結果</h3>
+            <div class="results-grid">
+                <div class="result-card">
+                    <div class="result-label">總反應次數</div>
+                    <div class="result-value" id="finalTotalReactions">0</div>
+                </div>
+                <div class="result-card">
+                    <div class="result-label">成功率</div>
+                    <div class="result-value" id="finalSuccessRate">0%</div>
+                </div>
+                <div class="result-card">
+                    <div class="result-label">標準差</div>
+                    <div class="result-value" id="finalStandardDeviation">0ms</div>
+                </div>
+                <div class="result-card">
+                    <div class="result-label">改善幅度</div>
+                    <div class="result-value" id="finalImprovement">+0%</div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- 設定面板 -->
+    <div id="settingsPanel" class="settings-panel">
+        <h3>⚙️ 系統設定</h3>
+        
+        <div class="setting-group">
+            <label for="roundsInput">訓練回合數 (5-50):</label>
+            <input type="number" id="roundsInput" min="5" max="50" value="10">
+        </div>
+        
+        <div class="setting-group">
+            <label for="apiKeyInput">Google API Key:</label>
+            <input type="password" id="apiKeyInput" placeholder="輸入您的 Google API Key" autocomplete="off">
+            <small>用於 Google AI 分析功能</small>
+        </div>
+        
+        <div class="action-buttons">
+            <button id="saveSettings" class="save-btn">儲存設定</button>
+            <button id="saveSettingsBtn" class="save-btn">💾 儲存設定</button>
+        </div>
+    </div>
+
+    <!-- AI 載入器 -->
+    <script>
+        window.AILoader = {
+            loaded: false,
+            callbacks: [],
+            
+            // 註冊載入完成回調
+            onLoad(callback) {
+                if (this.loaded) {
+                    callback();
+                } else {
+                    this.callbacks.push(callback);
+                }
+            },
+            
+            // 標記為已載入
+            markLoaded() {
+                this.loaded = true;
+                document.getElementById('aiStatus').textContent = '✅ AI 已載入';
+                document.getElementById('aiStatus').className = 'status-badge success';
+                this.callbacks.forEach(callback => callback());
+                this.callbacks = [];
+            },
+            
+            // 標記載入失敗
+            markFailed() {
+                this.loaded = true; // 仍標記為完成，避免無限等待
+                document.getElementById('aiStatus').textContent = '❌ AI 載入失敗';
+                document.getElementById('aiStatus').className = 'status-badge warning';
+                this.callbacks.forEach(callback => callback());
+                this.callbacks = [];
+            },
+            
+            // 檢查是否載入
+            isReady() {
+                return typeof window.GoogleGenerativeAI !== 'undefined';
+            }
+        };
+    </script>
+
+    <!-- Google Generative AI 載入器 -->
+    <script>
+        console.log('🚀 載入 Google AI 包裝器...');
+        
+        // 載入本地包裝器
+        const script = document.createElement('script');
+        script.src = 'google-ai-wrapper.js';
+        script.onload = function() {
+            console.log('✅ Google AI 包裝器載入成功');
+            if (window.AILoader) {
+                window.AILoader.markLoaded();
+            }
+        };
+        script.onerror = function() {
+            console.error('❌ Google AI 包裝器載入失敗');
+            // 創建一個最小的回退實現
+            window.GoogleGenerativeAI = {
+                GoogleGenerativeAI: class {
+                    constructor(apiKey) {
+                        console.log('使用回退 AI 實現');
+                    }
+                    getGenerativeModel() {
+                        return {
+                            generateContent: async () => ({
+                                response: { text: () => '⚠️ AI 功能暫時不可用，但訓練數據已記錄。' }
+                            })
+                        };
+                    }
+                }
+            };
+            if (window.AILoader) {
+                window.AILoader.markFailed();
+            }
+        };
+        document.head.appendChild(script);
+    </script>
+
+    <!-- 載入主要 JavaScript -->
+    <script src="main.js?v=20250620-sdk-fix"></script>
+    
+    <!-- 動態背景粒子生成 -->
+    <script>
+        // 生成動態背景粒子
+        function createParticles() {
+            const particlesContainer = document.getElementById('particles');
+            const particleCount = 20;
+            
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                
+                // 隨機大小和位置
+                const size = Math.random() * 10 + 5;
+                particle.style.width = size + 'px';
+                particle.style.height = size + 'px';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.top = Math.random() * 100 + '%';
+                
+                // 隨機動畫延遲
+                particle.style.animationDelay = Math.random() * 6 + 's';
+                particle.style.animationDuration = (Math.random() * 4 + 4) + 's';
+                
+                particlesContainer.appendChild(particle);
+            }
+        }
+        
+        // 頁面載入完成後生成粒子
+        document.addEventListener('DOMContentLoaded', createParticles);
+    </script>
+    
+    <!-- 元素檢查腳本 -->
+    <script>
+        // 在頁面完全載入後檢查元素
+        window.addEventListener('load', () => {
+            console.log('🔍 頁面完全載入，檢查元素...');
+            const testIds = ['settingsBtn', 'systemStatus', 'saveSettingsBtn', 'finalTotalReactions', 'finalSuccessRate', 'finalStandardDeviation', 'finalImprovement'];
+            
+            testIds.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    console.log(`✅ 找到元素: ${id}`, element);
+                } else {
+                    console.log(`❌ 未找到元素: ${id}`);
+                    // 檢查是否有類似的元素
+                    const similar = document.querySelector(`[id*="${id}"]`);
+                    if (similar) {
+                        console.log(`🔍 找到類似元素:`, similar);
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>

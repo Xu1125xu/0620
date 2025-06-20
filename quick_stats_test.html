@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>統計功能快速測試</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
+        .test-result { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        button { padding: 8px 16px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 20px 0; }
+        .stat { background: #f8f9fa; padding: 15px; border-radius: 5px; text-align: center; }
+        .stat-value { font-size: 1.5em; font-weight: bold; color: #007bff; }
+    </style>
+</head>
+<body>
+    <h1>🧪 統計功能快速測試</h1>
+    
+    <div class="stats">
+        <div class="stat">
+            <div class="stat-value" id="totalReactions">0</div>
+            <div>總次數</div>
+        </div>
+        <div class="stat">
+            <div class="stat-value" id="successRate">0%</div>
+            <div>成功率</div>
+        </div>
+        <div class="stat">
+            <div class="stat-value" id="standardDeviation">--</div>
+            <div>穩定性</div>
+        </div>
+        <div class="stat">
+            <div class="stat-value" id="improvement">--</div>
+            <div>評價</div>
+        </div>
+    </div>
+    
+    <div>
+        <button onclick="runBasicTest()">基本功能測試</button>
+        <button onclick="runProgressiveTest()">進階測試</button>
+        <button onclick="clearResults()">清除結果</button>
+    </div>
+    
+    <div id="results"></div>
+
+    <script>
+        // 統計更新函數 (從 main.js 複製)
+        function updateStatsDisplay() {
+            const reactionTimes = window.testData || [];
+            
+            // 即時更新統計區域的數據
+            const totalReactions = reactionTimes.length;
+            const successfulReactions = reactionTimes.filter(time => time <= 1000).length;
+            const successRate = totalReactions > 0 ? (successfulReactions / totalReactions * 100) : 0;
+            
+            // 計算標準差
+            let standardDeviation = 0;
+            if (reactionTimes.length > 1) {
+                const average = reactionTimes.reduce((sum, time) => sum + time, 0) / reactionTimes.length;
+                const variance = reactionTimes.reduce((sum, time) => sum + Math.pow(time - average, 2), 0) / reactionTimes.length;
+                standardDeviation = Math.sqrt(variance);
+            }
+            
+            // 生成改善建議
+            let improvement = '需要數據';
+            if (totalReactions > 0) {
+                if (successRate >= 90) improvement = '優秀';
+                else if (successRate >= 80) improvement = '良好';
+                else if (successRate >= 70) improvement = '普通';
+                else improvement = '需要改進';
+            }
+            
+            // 更新 DOM 元素
+            document.getElementById('totalReactions').textContent = totalReactions;
+            document.getElementById('successRate').textContent = totalReactions > 0 ? `${successRate.toFixed(1)}%` : '0%';
+            document.getElementById('standardDeviation').textContent = standardDeviation > 0 ? `${standardDeviation.toFixed(0)} ms` : '-- ms';
+            document.getElementById('improvement').textContent = improvement;
+            
+            return { totalReactions, successRate, standardDeviation, improvement };
+        }
+        
+        function addResult(message, type = 'info') {
+            const resultsDiv = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `test-result ${type}`;
+            div.innerHTML = `[${new Date().toLocaleTimeString()}] ${message}`;
+            resultsDiv.appendChild(div);
+            resultsDiv.scrollTop = resultsDiv.scrollHeight;
+        }
+        
+        function runBasicTest() {
+            addResult('開始基本功能測試...', 'info');
+            
+            // 初始化測試數據
+            window.testData = [];
+            updateStatsDisplay();
+            
+            // 測試 1: 空數據
+            let stats = updateStatsDisplay();
+            if (stats.totalReactions === 0 && stats.successRate === 0) {
+                addResult('✅ 測試 1 通過: 空數據狀態正確', 'success');
+            } else {
+                addResult('❌ 測試 1 失敗: 空數據狀態不正確', 'error');
+            }
+            
+            // 測試 2: 添加一些數據
+            window.testData = [300, 450, 200, 800, 1200, 350];
+            stats = updateStatsDisplay();
+            
+            if (stats.totalReactions === 6) {
+                addResult('✅ 測試 2a 通過: 總次數計算正確', 'success');
+            } else {
+                addResult(`❌ 測試 2a 失敗: 總次數應為 6，實際為 ${stats.totalReactions}`, 'error');
+            }
+            
+            // 檢查成功率 (<=1000ms 的有 5 個，總共 6 個)
+            const expectedSuccessRate = (5/6 * 100);
+            if (Math.abs(stats.successRate - expectedSuccessRate) < 0.1) {
+                addResult('✅ 測試 2b 通過: 成功率計算正確', 'success');
+            } else {
+                addResult(`❌ 測試 2b 失敗: 成功率應為 ${expectedSuccessRate.toFixed(1)}%，實際為 ${stats.successRate.toFixed(1)}%`, 'error');
+            }
+            
+            // 檢查評價
+            if (stats.improvement === '良好') {
+                addResult('✅ 測試 2c 通過: 評價正確', 'success');
+            } else {
+                addResult(`❌ 測試 2c 失敗: 評價應為「良好」，實際為「${stats.improvement}」`, 'error');
+            }
+            
+            addResult('基本功能測試完成', 'info');
+        }
+        
+        function runProgressiveTest() {
+            addResult('開始進階測試...', 'info');
+            
+            // 測試不同表現水準
+            const testCases = [
+                { data: [200, 250, 300, 220, 280], expected: '優秀', name: '優秀表現' },
+                { data: [400, 500, 600, 450, 550, 1100, 800], expected: '良好', name: '良好表現' },
+                { data: [600, 800, 900, 1000, 1200, 700], expected: '普通', name: '普通表現' },
+                { data: [1200, 1500, 1800, 1100, 1300], expected: '需要改進', name: '需要改進' }
+            ];
+            
+            testCases.forEach((testCase, index) => {
+                window.testData = testCase.data;
+                const stats = updateStatsDisplay();
+                
+                if (stats.improvement === testCase.expected) {
+                    addResult(`✅ 測試 ${index + 1} 通過: ${testCase.name} - 評價正確`, 'success');
+                } else {
+                    addResult(`❌ 測試 ${index + 1} 失敗: ${testCase.name} - 期望「${testCase.expected}」，實際「${stats.improvement}」`, 'error');
+                }
+            });
+            
+            addResult('進階測試完成', 'info');
+        }
+        
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+            window.testData = [];
+            updateStatsDisplay();
+        }
+        
+        // 初始化
+        window.testData = [];
+        updateStatsDisplay();
+    </script>
+</body>
+</html>
